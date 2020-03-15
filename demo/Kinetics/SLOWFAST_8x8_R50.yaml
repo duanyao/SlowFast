@@ -62,7 +62,9 @@ DATA_LOADER:
 DEMO:
   ENABLE: True
   LABEL_FILE_PATH: "./demo/Kinetics/kinetics_400_labels.csv"
-  DATA_SOURCE: 2
+  DATA_SOURCE_PATH: "/home/duanyao/project/mmaction.git/data/ucf101/videos/HighJump/v_HighJump_g02_c02.avi"
+  # DATA_SOURCE_PATH: "/home/duanyao/project/mmaction.git/data/ucf101/videos/BandMarching/v_BandMarching_g01_c03.avi"
+  # DATA_SOURCE: 0
   # DISPLAY_WIDTH: 640
   # DISPLAY_HEIGHT: 480
 NUM_GPUS: 1
