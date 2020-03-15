@@ -65,8 +65,8 @@ DATA_LOADER:
 DEMO:
   ENABLE: True
   LABEL_FILE_PATH: "./demo/AVA/ava.names"
-  DATA_SOURCE: 0
-  # DATA_SOURCE_PATH: "/home/duanyao/project/mmaction.git/data/ucf101/videos/HighJump/v_HighJump_g02_c02.avi"
+  #DATA_SOURCE: 0
+  DATA_SOURCE_PATH: "/home/duanyao/project/mmaction.git/data/ucf101/videos/HighJump/v_HighJump_g02_c02.avi"
   # DISPLAY_WIDTH: 640
   # DISPLAY_HEIGHT: 480
   DETECTRON2_OBJECT_DETECTION_MODEL_CFG: "COCO-Detection/faster_rcnn_R_50_FPN_3x.yaml"

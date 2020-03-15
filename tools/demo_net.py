@@ -25,7 +25,10 @@ np.random.seed(20)
 class VideoReader(object):
 
     def __init__(self, cfg):
-        self.source = cfg.DEMO.DATA_SOURCE
+        if cfg.DEMO.DATA_SOURCE_PATH:
+            self.source = cfg.DEMO.DATA_SOURCE_PATH
+        else:
+            self.source = cfg.DEMO.DATA_SOURCE
         self.display_width = cfg.DEMO.DISPLAY_WIDTH
         self.display_height = cfg.DEMO.DISPLAY_HEIGHT
         try:  # OpenCV needs int to read from webcam
@@ -74,6 +77,8 @@ def demo(cfg):
     logger.info(cfg)
     # Build the video model and print model statistics.
     model = model_builder.build_model(cfg)
+    for p in model.parameters():
+        p.requires_grad = False
     model.eval()
     misc.log_model_info(model)
 
@@ -122,22 +127,29 @@ def demo(cfg):
     frames = []
     pred_labels = []
     s = 0.
+    round = 0
+    total_frames = 0
     for able_to_read, frame in frame_provider:
+        start = time()
         if not able_to_read:
             # when reaches the end frame, clear the buffer and continue to the next one.
             frames = []
+            total_frames = 0
             continue
-
+        total_frames += 1
+        #print('read video:[1], len(frames)=' + str(len(frames)) + ', now=' + str(time() - start))
         if len(frames) != seq_len:
             frame_processed = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             frame_processed = scale(cfg.DATA.TEST_CROP_SIZE, frame_processed)
             frames.append(frame_processed)
             if cfg.DETECTION.ENABLE and len(frames) == seq_len//2 - 1:
                 mid_frame = frame
+                print('read video:[1], mid_frame idx=' + str(len(frames)) + ', now=' + str(time() - start))
             
         if len(frames) == seq_len:
-            start = time()
+            #start = time()
             if cfg.DETECTION.ENABLE:
+                print('predction>detection: now=' + str(time() - start))
                 outputs = object_predictor(mid_frame)
                 fields = outputs["instances"]._fields
                 pred_classes = fields["pred_classes"]
@@ -153,17 +165,23 @@ def demo(cfg):
                 boxes = torch.cat(
                     [torch.full((boxes.shape[0], 1), float(0)).cuda(), boxes], axis=1
                 )
+                print('predction>detection: finished, now=' + str(time() - start), ', boxes=', boxes)
 
             inputs = torch.as_tensor(frames).float()
+            print('preprocess:[1], now=' + str(time() - start))
             inputs = inputs / 255.0
+            print('preprocess:[2], now=' + str(time() - start))
             # Perform color normalization.
             inputs = inputs - torch.tensor(cfg.DATA.MEAN)
             inputs = inputs / torch.tensor(cfg.DATA.STD)
+            print('preprocess:[3], now=' + str(time() - start))
             # T H W C -> C T H W.
             inputs = inputs.permute(3, 0, 1, 2)
 
             # 1 C T H W.
             inputs = inputs.unsqueeze(0)
+
+            print('predction:[1], now=' + str(time() - start))
 
             # Sample frames for the fast pathway.
             index = torch.linspace(0, inputs.shape[2] - 1, cfg.DATA.NUM_FRAMES).long()
@@ -184,6 +202,8 @@ def demo(cfg):
             else:
                 inputs = inputs.cuda(non_blocking=True)
 
+            print('predction:[2], now=' + str(time() - start))
+
             # Perform the forward pass.
             if cfg.DETECTION.ENABLE:
                 # When there is nothing in the scene, 
@@ -194,6 +214,8 @@ def demo(cfg):
                     preds = model(inputs, boxes)
             else:
                 preds = model(inputs)
+
+            print('predction:[3](before post processing), now=' + str(time() - start))
 
             # Gather all the predictions across all the devices to perform ensemble.
             if cfg.NUM_GPUS > 1:
@@ -225,15 +247,19 @@ def demo(cfg):
                 # Option 2: multi-label inferencing selected from probability entries > threshold
                 label_ids = torch.nonzero(preds.squeeze() > .1).reshape(-1).cpu().detach().numpy()
                 pred_labels = labels[label_ids]
-                logger.info(pred_labels)
                 if not list(pred_labels):
                     pred_labels = ['Unknown']
 
+            print('predction:[4], now=' + str(time() - start))
+            print('predction:results: ', pred_labels)
             # # option 1: remove the oldest frame in the buffer to make place for the new one.
             # frames.pop(0)
+            frames = frames[12:]
             # option 2: empty the buffer
-            frames = []
+            #frames = []
             s = time() - start
+            print('finished, round=', round, ', total_frames=', total_frames, ', time used=' + str(s))
+            round += 1
         
         if cfg.DETECTION.ENABLE and pred_labels and boxes.any():
             for box, box_labels in zip(boxes.astype(int), pred_labels):
