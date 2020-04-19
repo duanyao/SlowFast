@@ -65,8 +65,14 @@ DATA_LOADER:
 DEMO:
   ENABLE: True
   LABEL_FILE_PATH: "./demo/AVA/ava.names"
-  #DATA_SOURCE: 0
-  DATA_SOURCE_PATH: "/home/duanyao/project/mmaction.git/data/ucf101/videos/HighJump/v_HighJump_g02_c02.avi"
+  DATA_SOURCE: 0
+  #DATA_SOURCE_PATH: "/home/duanyao/project/mmaction.git/data/ucf101/videos/HighJump/v_HighJump_g02_c02.avi"
+  #DATA_SOURCE_PATH: "/media/DATA/temp/sv1/sv1-25.mp4"
+  #DATA_SOURCE_PATH: "/media/DATA/emulated-oss/temp/body-key-point-input/-1177908937204806502/2019-06-21GMT+8/1561101023349-r25.mp4"
+  #DATA_SOURCE_PATH: "/media/DATA/temp/1561101023349-576.mp4"
+  #DATA_SOURCE_PATH: "/home/duanyao/data-development/label-work/source/1561101023349-576-9s.mp4"
+  #DATA_SOURCE_PATH: "/home/duanyao/data-development/label-work/source/1561101023349-576-r32-9s.mp4"
+  #DATA_SOURCE_PATH: "/home/duanyao/data-development/label-work/source/1561101023349-576-r32-30s.mp4"
   # DISPLAY_WIDTH: 640
   # DISPLAY_HEIGHT: 480
   DETECTRON2_OBJECT_DETECTION_MODEL_CFG: "COCO-Detection/faster_rcnn_R_50_FPN_3x.yaml"
