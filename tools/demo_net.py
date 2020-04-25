@@ -127,15 +127,23 @@ def demo(cfg):
     frames = []
     pred_labels = []
     s = 0.
-    round = 0
+    round = 1
     total_frames = 0
+
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v') #*'H264') #*'XVID')
+    video_writer = cv2.VideoWriter('output.mp4',
+        fourcc, 32.0,
+        (1024, 576))
+
     for able_to_read, frame in frame_provider:
         start = time()
         if not able_to_read:
+            print('end of input video, exiting')
+            break
             # when reaches the end frame, clear the buffer and continue to the next one.
-            frames = []
-            total_frames = 0
-            continue
+            # frames = []
+            # total_frames = 0
+            # continue
         total_frames += 1
         #print('read video:[1], len(frames)=' + str(len(frames)) + ', now=' + str(time() - start))
         if len(frames) != seq_len:
@@ -144,7 +152,7 @@ def demo(cfg):
             frames.append(frame_processed)
             if cfg.DETECTION.ENABLE and len(frames) == seq_len//2 - 1:
                 mid_frame = frame
-                print('read video:[1], mid_frame idx=' + str(len(frames)) + ', now=' + str(time() - start))
+                print('read video:[1], mid_frame idx=' + str(total_frames - 1) + ', now=' + str(time() - start))
             
         if len(frames) == seq_len:
             #start = time()
@@ -165,7 +173,10 @@ def demo(cfg):
                 boxes = torch.cat(
                     [torch.full((boxes.shape[0], 1), float(0)).cuda(), boxes], axis=1
                 )
-                print('predction>detection: finished, now=' + str(time() - start), ', boxes=', boxes)
+                print('predction>detection: finished, frame idx=', total_frames,
+                    ' now=' + str(time() - start),
+                    ', boxes=', boxes
+                    )
 
             inputs = torch.as_tensor(frames).float()
             print('preprocess:[1], now=' + str(time() - start))
@@ -254,9 +265,9 @@ def demo(cfg):
             print('predction:results: ', pred_labels)
             # # option 1: remove the oldest frame in the buffer to make place for the new one.
             # frames.pop(0)
-            frames = frames[12:]
+            # frames = frames[12:]
             # option 2: empty the buffer
-            #frames = []
+            frames = []
             s = time() - start
             print('finished, round=', round, ', total_frames=', total_frames, ', time used=' + str(s))
             round += 1
@@ -265,6 +276,7 @@ def demo(cfg):
             for box, box_labels in zip(boxes.astype(int), pred_labels):
                 cv2.rectangle(frame, tuple(box[:2]), tuple(box[2:]), (0, 255, 0), thickness=2)
                 label_origin = box[:2]
+                box_labels = box_labels[0:2]
                 for label in box_labels:
                     label_origin[-1] -= 5
                     (label_width, label_height), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, .5, 2)
@@ -296,10 +308,14 @@ def demo(cfg):
                     fontFace=cv2.FONT_HERSHEY_SIMPLEX,
                     fontScale=.65, color=(0, 235, 0), thickness=2)
         # Display the frame
-        cv2.imshow('SlowFast', frame)   
+        cv2.imshow('SlowFast', frame)
+
+        video_writer.write(frame)
         # hit Esc to quit the demo.
         key = cv2.waitKey(1)
         if key == 27:
             break
 
     frame_provider.clean()
+
+    video_writer.release()
